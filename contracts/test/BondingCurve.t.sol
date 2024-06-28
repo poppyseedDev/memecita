@@ -33,7 +33,6 @@ contract BondingCurveTokenTest is Test {
 
     function testSellTokens() public {
         uint256 buyAmount = 1e16; // 0.01 ETH
-        uint256 initialPrice = token.getCurrentPrice();
 
         // Fund the contract with enough ETH to handle the sell operation
         hoax(address(this), buyAmount * 10); // Provide sufficient ETH to the contract
