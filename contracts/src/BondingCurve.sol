@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract PumpFunToken is ERC20, Ownable {
+contract BondingCurveToken is ERC20, Ownable {
     uint256 public constant MAX_MARKET_CAP = 69000 * 1e18; // $69,000 in Wei
     uint256 public constant LIQUIDITY_AMOUNT = 12000 * 1e18; // $12,000 in Wei
 
@@ -19,7 +19,7 @@ contract PumpFunToken is ERC20, Ownable {
     event TokensSold(address indexed seller, uint256 amount, uint256 revenue);
     event LiquidityBurned(uint256 amount);
 
-    constructor(address _raydiumAddress) ERC20("PumpFunToken", "PFT") {
+    constructor(address _raydiumAddress) ERC20("BondingCurveToken", "BCT") Ownable(_raydiumAddress) {
         raydiumAddress = _raydiumAddress;
     }
 
@@ -29,16 +29,17 @@ contract PumpFunToken is ERC20, Ownable {
     }
 
     // Buy tokens
-    function buyTokens() external payable {
+    function buyTokens() public payable {
         require(!liquidityBurned, "Market cap reached, no more purchases allowed");
 
-        uint256 amountToBuy = msg.value / getCurrentPrice();
-        uint256 cost = amountToBuy * getCurrentPrice();
-        require(msg.value >= cost, "Insufficient ETH sent");
+        uint256 currentPrice = getCurrentPrice();
+        require(currentPrice > 0, "Current price should be greater than zero");
+        uint256 amountToBuy = msg.value / currentPrice;
+        require(amountToBuy > 0, "Amount to buy should be greater than zero");
 
         _mint(msg.sender, amountToBuy);
 
-        emit TokensPurchased(msg.sender, amountToBuy, cost);
+        emit TokensPurchased(msg.sender, amountToBuy, msg.value);
 
         if (totalSupply() * getCurrentPrice() >= MAX_MARKET_CAP) {
             _burnLiquidity();
@@ -49,9 +50,11 @@ contract PumpFunToken is ERC20, Ownable {
     function sellTokens(uint256 amount) external {
         require(balanceOf(msg.sender) >= amount, "Insufficient token balance");
 
-        uint256 revenue = amount * getCurrentPrice();
-        _burn(msg.sender, amount);
+        uint256 currentPrice = getCurrentPrice();
+        require(currentPrice > 0, "Current price should be greater than zero");
+        uint256 revenue = amount * currentPrice;
 
+        _burn(msg.sender, amount);
         payable(msg.sender).transfer(revenue);
 
         emit TokensSold(msg.sender, amount, revenue);
