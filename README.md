@@ -3,6 +3,76 @@
 Frontend using  Wagmi, Tailwind CSS, RainbowKIT, TanStack Query.
 Smart contracts using Foundry.
 
+**Memecita Token Launchpad: Enhanced Definition and Features**
+
+### Overview
+Memecita is a cutting-edge token launchpad designed to energize the memecoin ecosystem, combining token dynamics with a focus on user engagement, security, and brand utility. Built on the principles of pump.fun, Memecita leverages $MCX tokens to create a vibrant and secure platform for trading, staking, and promoting memecoins.
+
+### Token Dynamics
+
+**Platform Fee:**
+- A platform fee of 1-2% is applied to all user transactions (buying and selling).
+
+**Minting $MCX:**
+- Each $1 spent on memecoins mints 1 $MCX token.
+- Minting occurs based on net weekly inflow (e.g., $100 spent and $50 sold results in 50 $MCX minted).
+
+**Redistribution:**
+- At the end of each week, all minted $MCX tokens are distributed among users based on their spending in a weekly leaderboard.
+- The platform take-rate is redistributed 20% to the treasury and 80% to $MCX stakers.
+
+**Claim Fee:**
+- Newly minted $MCX tokens are subject to a linearly decreasing claim fee over three months. The proceeds from this fee are used to buy back and burn $MCX tokens.
+
+**Staking:**
+- Users can stake $MCX to earn a portion of the platform fees, enhancing their staking multiplier.
+- $MCX staking also allows users to promote their memecoins on the platform, with a penalty (slashing) if a promoted coin rugs.
+- Exclusive items, like the Memecita hat, can be purchased using $MCX.
+
+**Halving Mechanism:**
+- The cost to mint $MCX doubles after specific supply thresholds, creating a scarcity model:
+  - $1 at 400M tokens
+  - $2 at 200M tokens
+  - $4 at 100M tokens
+  - $8 at 50M tokens
+  - $16 at 25M tokens
+  - $32 at 12.5M tokens
+
+### Allocation
+- 30% of the total supply is allocated to the founding team.
+- 70% is reserved for minting through platform activities.
+
+### Additional Features
+
+**Security and Anti-Rug Measures:**
+- $MCX staking for coin promotion includes a slashing mechanism to penalize rugs, enhancing platform trust.
+- Regular audits and transparent operations to maintain high security standards.
+
+**User Experience:**
+- A slick, fast-shipping UI with superb design and vibes.
+- Weekly and all-time leaderboards to gamify and incentivize user engagement.
+
+### Community and Engagement
+
+**Leaderboards and Trends:**
+- Retardio leaderboard tracks both all-time and weekly performance.
+- Trending memecoins are highlighted, with boosted listings displayed as ads.
+
+### Strategic Positioning
+- The timing of Memecita’s launch is crucial, aiming to capture market interest during a downturn in altcoins and creating a narrative vacuum that Memecita can fill with its unique value proposition.
+
+### Improving the Experience with $MCX
+- **Minimizing Rugs:** The slashing mechanism for $MCX-staked promotions deters malicious actors, ensuring higher quality and trustworthiness of listed memecoins.
+- **Enhanced Engagement:** Weekly redistribution and leaderboard incentives keep users actively involved, fostering a dynamic and lively community.
+- **Utility and Scarcity:** The dual role of $MCX as both a memecoin and a utility token, combined with the halving mechanism, ensures long-term value and scarcity, appealing to both traders and investors.
+
+Memecita is poised to revolutionize the memecoin landscape with its innovative token dynamics, robust security features, and engaging user experience, positioning $MCX as both a valuable asset and a cultural phenomenon.
+
+
+---
+
+# New tokens will be launched on a bonding curve
+
 ## Bonding Curve Dynamics
 
 The Memecita token Launchpad uses bonding curve mechanics to govern token transactions. Here's a brief overview:
@@ -24,8 +94,3 @@ The Memecita token Launchpad uses bonding curve mechanics to govern token transa
 2. **Increased Demand**: Bob buys 20 tokens, raising the price to $2.
 3. **Selling for Profit**: Alice sells her tokens at $2 each, making a profit.
 4. **Market Cap Achievement**: At a $69,000 market cap, $12,000 in liquidity is burned.
-
-### Conclusion
-
-These mechanics create a dynamic market with transparent pricing, encouraging early adoption and stabilizing the ecosystem through liquidity management.
-
