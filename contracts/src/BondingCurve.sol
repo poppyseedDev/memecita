@@ -1,82 +1,79 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import "./Token.sol";
 
-contract BondingCurveToken is ERC20, Ownable {
-    uint256 public constant MAX_MARKET_CAP = 69000 * 1e18; // $69,000 in Wei
-    uint256 public constant LIQUIDITY_AMOUNT = 12000 * 1e18; // $12,000 in Wei
+contract BondingCurve is Ownable {
+    IUniswapV2Router02 public uniswapRouter;
+    uint256 public constant MAX_SUPPLY = 1000000 * 10**18;
+    uint256 public constant MARKET_CAP_THRESHOLD = 69000 * 10**18; // $69k
+    uint256 public constant LIQUIDITY_AMOUNT = 12000 * 10**18; // $12k
 
-    address public raydiumAddress; // Address where liquidity will be sent
-    bool public liquidityBurned = false;
+    uint256 public currentSupply;
+    uint256 public reserve;
 
-    // Bonding curve parameters (example: linear bonding curve)
-    uint256 public constant INITIAL_PRICE = 1e16; // 0.01 ETH
-    uint256 public constant PRICE_INCREMENT = 1e15; // 0.001 ETH per token
+    Token public token;
+    bool public liquidityBurned;
 
-    event TokensPurchased(address indexed buyer, uint256 amount, uint256 cost);
-    event TokensSold(address indexed seller, uint256 amount, uint256 revenue);
+    event Buy(address indexed buyer, uint256 amount, uint256 price);
+    event Sell(address indexed seller, uint256 amount, uint256 price);
     event LiquidityBurned(uint256 amount);
 
-    constructor(address _raydiumAddress) ERC20("BondingCurveToken", "BCT") Ownable(_raydiumAddress) {
-        raydiumAddress = _raydiumAddress;
+    constructor(address _token, address _uniswapRouter) Ownable(msg.sender) {
+        token = Token(_token);
+        uniswapRouter = IUniswapV2Router02(_uniswapRouter);
+        liquidityBurned = false;
     }
 
-    // Calculate the current price based on the total supply
-    function getCurrentPrice() public view returns (uint256) {
-        return INITIAL_PRICE + (totalSupply() * PRICE_INCREMENT);
+    function getPrice(uint256 _amount) public view returns (uint256) {
+        return (_amount * reserve) / (MAX_SUPPLY - currentSupply);
     }
 
-    // Buy tokens
-    function buyTokens() public payable {
-        require(!liquidityBurned, "Market cap reached, no more purchases allowed");
+    function buy(uint256 _amount) external payable {
+        uint256 cost = getPrice(_amount);
+        require(msg.value >= cost, "Insufficient ETH sent");
 
-        uint256 currentPrice = getCurrentPrice();
-        require(currentPrice > 0, "Current price should be greater than zero");
-        uint256 amountToBuy = msg.value / currentPrice;
-        require(amountToBuy > 0, "Amount to buy should be greater than zero");
+        reserve += msg.value;
+        currentSupply += _amount;
 
-        _mint(msg.sender, amountToBuy);
+        token.mint(msg.sender, _amount);
+        emit Buy(msg.sender, _amount, cost);
 
-        emit TokensPurchased(msg.sender, amountToBuy, msg.value);
-
-        if (totalSupply() * getCurrentPrice() >= MAX_MARKET_CAP) {
-            _burnLiquidity();
+        if (reserve >= MARKET_CAP_THRESHOLD && !liquidityBurned) {
+            _createAndBurnLiquidity();
         }
     }
 
-    // Sell tokens
-    function sellTokens(uint256 amount) external {
-        require(balanceOf(msg.sender) >= amount, "Insufficient token balance");
+    function sell(uint256 _amount) external {
+        require(token.balanceOf(msg.sender) >= _amount, "Insufficient tokens");
 
-        uint256 currentPrice = getCurrentPrice();
-        require(currentPrice > 0, "Current price should be greater than zero");
-        uint256 revenue = amount * currentPrice;
+        uint256 refund = getPrice(_amount);
+        reserve -= refund;
+        currentSupply -= _amount;
 
-        _burn(msg.sender, amount);
-        payable(msg.sender).transfer(revenue);
-
-        emit TokensSold(msg.sender, amount, revenue);
+        token.transferFrom(msg.sender, address(this), _amount);
+        payable(msg.sender).transfer(refund);
+        emit Sell(msg.sender, _amount, refund);
     }
 
-    // Burn liquidity when market cap is reached
-    function _burnLiquidity() internal {
-        require(!liquidityBurned, "Liquidity already burned");
+    function _createAndBurnLiquidity() internal {
+        uint256 amountETH = LIQUIDITY_AMOUNT;
+        address[] memory path = new address[](2);
+        path[0] = address(uniswapRouter.WETH());
+        path[1] = address(token);
+
+        uniswapRouter.swapExactETHForTokens{value: amountETH}(
+            0,
+            path,
+            address(0), // Burning the tokens
+            block.timestamp
+        );
 
         liquidityBurned = true;
-        payable(raydiumAddress).transfer(LIQUIDITY_AMOUNT);
-
-        emit LiquidityBurned(LIQUIDITY_AMOUNT);
-    }
-
-    // Withdraw function for contract owner (for demonstration purposes)
-    function withdraw() external onlyOwner {
-        payable(owner()).transfer(address(this).balance);
-    }
-
-    // Receive function to accept ETH
-    receive() external payable {
-        buyTokens();
+        emit LiquidityBurned(amountETH);
     }
 }

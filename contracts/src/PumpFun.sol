@@ -1,26 +1,29 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import "./Token.sol";
+import "./BondingCurve.sol";
 
 contract PumpFun is Ownable {
     IUniswapV2Router02 public uniswapRouter;
 
-    constructor(address _uniswapRouter) {
+    event PoolCreated(address indexed token, address indexed bondingCurve);
+
+    constructor(address _uniswapRouter) Ownable(msg.sender) {
         uniswapRouter = IUniswapV2Router02(_uniswapRouter);
     }
 
-    function createToken(string memory name, string memory symbol, uint256 initialSupply) external onlyOwner returns (address) {
-        ERC20 newToken = new ERC20(name, symbol);
-        newToken._mint(msg.sender, initialSupply);
+    function createToken(string memory name, string memory symbol) external onlyOwner returns (address) {
+        Token newToken = new Token(name, symbol);
         return address(newToken);
     }
 
-    function createPool(address token) external onlyOwner {
-        // Pool creation logic with Uniswap
+    function createBondingCurve(address token) external onlyOwner returns (address) {
+        BondingCurve bondingCurve = new BondingCurve(token, address(uniswapRouter), msg.sender);
+        emit PoolCreated(token, address(bondingCurve));
+        return address(bondingCurve);
     }
 
     function addLiquidity(address token, uint256 amountToken, uint256 amountETH) external payable onlyOwner {
