@@ -9,28 +9,27 @@ import "./BondingCurve.sol";
 contract PumpFun is Ownable {
     IUniswapV2Router02 public uniswapRouter;
 
-    event PoolCreated(address indexed token, address indexed bondingCurve);
+    event TokenCreated(address indexed token, address indexed bondingCurve);
+    event LiquidityAdded(address indexed token, uint256 amountToken, uint256 amountETH);
 
     constructor(address _uniswapRouter) Ownable(msg.sender) {
         uniswapRouter = IUniswapV2Router02(_uniswapRouter);
     }
 
-    function createToken(string memory name, string memory symbol) external onlyOwner returns (address) {
+    function createTokenAndBondingCurve(string memory name, string memory symbol) external returns (address, address) {
         Token newToken = new Token(name, symbol);
-        return address(newToken);
+        BondingCurve bondingCurve = new BondingCurve(address(newToken), address(uniswapRouter));
+        newToken.transferOwnership(address(bondingCurve));
+
+        emit TokenCreated(address(newToken), address(bondingCurve));
+        return (address(newToken), address(bondingCurve));
     }
 
-    function createBondingCurve(address token) external onlyOwner returns (address) {
-        BondingCurve bondingCurve = new BondingCurve(token, address(uniswapRouter), msg.sender);
-        emit PoolCreated(token, address(bondingCurve));
-        return address(bondingCurve);
-    }
-
-    function addLiquidity(address token, uint256 amountToken, uint256 amountETH) external payable onlyOwner {
+    function addLiquidity(address token, uint256 amountToken, uint256 amountETH) external payable {
         IERC20(token).transferFrom(msg.sender, address(this), amountToken);
         IERC20(token).approve(address(uniswapRouter), amountToken);
 
-        uniswapRouter.addLiquidityETH{value: amountETH}(
+        (uint amountTokenSent, uint amountETHSent, ) = uniswapRouter.addLiquidityETH{value: amountETH}(
             token,
             amountToken,
             0,
@@ -38,6 +37,8 @@ contract PumpFun is Ownable {
             msg.sender,
             block.timestamp
         );
+
+        emit LiquidityAdded(token, amountTokenSent, amountETHSent);
     }
 
     function removeLiquidity(address token, uint256 liquidity) external onlyOwner {
